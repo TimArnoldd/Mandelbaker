@@ -1,0 +1,67 @@
+﻿<Window x:Class="Mandelbaker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Mandelbaker"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="675" Width="1200">
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="15*"></ColumnDefinition>
+            <ColumnDefinition Width="15*"></ColumnDefinition>
+            <ColumnDefinition Width="15*"></ColumnDefinition>
+            <ColumnDefinition Width="15*"></ColumnDefinition>
+            <ColumnDefinition Width="40*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="90*"></RowDefinition>
+            <RowDefinition Height="10*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0 0 10 0" HorizontalAlignment="Stretch">
+            <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Generic Settings</Label>
+            <Label>Resolution:</Label>
+            <TextBox Text="{Binding Resolution}"></TextBox>
+            <Label>Iterations:</Label>
+            <TextBox Text="{Binding Iterations}"></TextBox>
+            <Label>X-Left:</Label>
+            <TextBox Text="{Binding XLeft}"></TextBox>
+            <Label>Y-Top:</Label>
+            <TextBox Text="{Binding YTop}"></TextBox>
+            <Label>Zoom:</Label>
+            <TextBox Text="{Binding Zoom}"></TextBox>
+            <Label>Directory:</Label>
+            <TextBox Text="{Binding Directory}" IsReadOnly="True"></TextBox>
+            <Button Click="OpenFolder" Margin="0 10 0 5" Width="90">Select Folder</Button>
+            <Label>Method:</Label>
+            <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}"></ComboBox>
+        </StackPanel>
+        <StackPanel Margin="0 0 10 0" Grid.Column="1" HorizontalAlignment="Stretch">
+            <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Single Image Settings</Label>
+            <Label>Filename:</Label>
+            <TextBox Text="{Binding Filename}"></TextBox>
+            <Button Click="RenderMandelbrot">Render Mandelbrot</Button>
+        </StackPanel>
+        <StackPanel Margin="0 0 10 0" Grid.Column="2" HorizontalAlignment="Stretch">
+            <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Matrix Settings</Label>
+            <Label>Dimension Size:</Label>
+            <TextBox Text="{Binding DimensionSize}"></TextBox>
+            <Button Click="RenderMatrix">Render Matrix</Button>
+        </StackPanel>
+        <StackPanel Margin="0 0 10 0" Grid.Column="3" HorizontalAlignment="Stretch">
+            <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Animation Settings</Label>
+            <Label>FPS:</Label>
+            <TextBox Text="{Binding FPS}"></TextBox>
+            <Label>Video Duration:</Label>
+            <TextBox Text="{Binding Duration}"></TextBox>
+            <Label>End X-Left:</Label>
+            <TextBox Text="{Binding EndXLeft}"></TextBox>
+            <Label>End Y-Top:</Label>
+            <TextBox Text="{Binding EndYTop}"></TextBox>
+            <Label>End Zoom:</Label>
+            <TextBox Text="{Binding EndZoom}"></TextBox>
+            <Button Click="RenderAnimation">Render Animation</Button>
+        </StackPanel>
+        <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="4" Text="{Binding Output, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1"></TextBlock>
+    </Grid>
+</Window>
