@@ -18,6 +18,16 @@ namespace Mandelbaker.Models
 {
     public static class Mandelbrot
     {
+        private static Context? _context;
+        private static Device? _device;
+        private static Accelerator? _accelerator;
+        private static Action<Index1D, ArrayView<double>, ArrayView<int>>? _loadedKernel;
+
+        static Mandelbrot()
+        {
+            SetupAccelerator();
+        }
+
         public static MandelbrotCalculationInformation SaveCPUMandelbrot(int resolution, int iterations, double xLeft, double yTop, double zoom, string directory, string? filename = null)
         {
             MandelbrotCalculationInformation calculationInformation = new(resolution, nameof(SaveCPUMandelbrot));
@@ -185,39 +195,18 @@ namespace Mandelbaker.Models
         }
         public static int[] CalculateGPUMandelbrot(int resolution, int iterations, double xLeft, double xRight, double yTop, double yBottom)
         {
-            Context context = Context.CreateDefault();
-            Accelerator accelerator = context.CreateCudaAccelerator(0);
+            if (_context == null ||
+                _accelerator == null ||
+                _loadedKernel == null)
+                throw new Exception();
 
             int[] result = new int[resolution * resolution];
-            var deviceOutput = accelerator.Allocate1D(new int[resolution * resolution]);
+            var deviceOutput = _accelerator.Allocate1D(new int[resolution * resolution]);
+            var deviceInput = _accelerator.Allocate1D(new double[] { resolution, iterations, yTop, yBottom, xLeft, xRight });
 
-            for (int iHeight = 0; iHeight < resolution; iHeight++)
-            {
-                double mandelHeight = iHeight * (yBottom - yTop) / resolution + yTop;
-
-                var deviceInput = accelerator.Allocate1D(new double[] { mandelHeight, resolution, xLeft, xRight, iterations, iHeight });
-                var loadedKernel = accelerator.LoadAutoGroupedStreamKernel(
-                (Index1D iWidth, ArrayView<double> data, ArrayView<int> output) =>
-                {
-                    double mandelWidth = iWidth * (data[3] - data[2]) / data[1] + data[2];
-                    var z = new Complex(mandelWidth, data[0]);
-                    var c = z;
-                    int i;
-                    for (i = 0; i < data[4]; i++)
-                    {
-                        if (Complex.Abs(z) > 2)
-                            break;
-                        z = z * z + c;
-                    }
-                    output[(int)(data[5] * data[1] + iWidth)] = i;
-                });
-
-                loadedKernel(resolution, deviceInput.View, deviceOutput.View);
-            }
+            _loadedKernel(resolution * resolution, deviceInput.View, deviceOutput.View);
 
             result = deviceOutput.GetAsArray1D();
-            accelerator.Dispose();
-            context.Dispose();
             return result;
         }
 
@@ -227,6 +216,34 @@ namespace Mandelbaker.Models
             double xRight = xLeft + 3 / zoom;
             double yBottom = yTop - 3 / zoom;
             return (xRight, yBottom);
+        }
+
+        public static void SetupAccelerator()
+        {
+            _context = Context.CreateDefault();
+            _device = _context.Devices.Where(x => x.AcceleratorType != AcceleratorType.CPU).FirstOrDefault();
+            if (_device == null)
+                throw new NotSupportedException();
+            _accelerator = _device.CreateAccelerator(_context);
+
+            _loadedKernel = _accelerator.LoadAutoGroupedStreamKernel(
+            (Index1D index, ArrayView<double> input, ArrayView<int> output) =>
+            {
+                int iHeight = index / (int)input[0];
+                int iWidth = index % (int)input[0];
+                double mandelHeight = iHeight * (input[3] - input[2]) / input[0] + input[2];
+                double mandelWidth = iWidth * (input[5] - input[4]) / input[0] + input[4];
+                var z = new Complex(mandelWidth, mandelHeight);
+                var c = z;
+                int i;
+                for (i = 0; i < input[1]; i++)
+                {
+                    if (Complex.Abs(z) > 2)
+                        break;
+                    z = z * z + c;
+                }
+                output[(int)(iHeight * input[0] + iWidth)] = i;
+            });
         }
 
         #region obsolete
