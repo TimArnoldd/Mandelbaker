@@ -172,23 +172,25 @@ namespace Mandelbaker.Models
         public static int[] CalculateCPUMandelbrot(int resolution, int iterations, double xLeft, double xRight, double yTop, double yBottom)
         {
             int[] result = new int[resolution * resolution];
-            Parallel.For(0, resolution, iHeight =>
+
+            Parallel.For(0, resolution * resolution, index =>
             {
+                int iHeight = index / resolution;
+                int iWidth = index % resolution;
+
                 double mandelHeight = iHeight * (yBottom - yTop) / resolution + yTop;
-                Parallel.For(0, resolution, iWidth =>
+                double mandelWidth = iWidth * (xRight - xLeft) / resolution + xLeft;
+
+                var z = new Complex(mandelWidth, mandelHeight);
+                var c = z;
+                int i;
+                for (i = 0; i < iterations; i++)
                 {
-                    double mandelWidth = iWidth * (xRight - xLeft) / resolution + xLeft;
-                    var z = new Complex(mandelWidth, mandelHeight);
-                    var c = z;
-                    int i;
-                    for (i = 0; i < iterations; i++)
-                    {
-                        if (Complex.Abs(z) > 2)
-                            break;
-                        z = z * z + c;
-                    }
-                    result[(int)(iHeight * resolution + iWidth)] = i;
-                });
+                    if (Complex.Abs(z) > 2)
+                        break;
+                    z = z * z + c;
+                }
+                result[iHeight * resolution + iWidth] = i;
             });
 
             return result;
