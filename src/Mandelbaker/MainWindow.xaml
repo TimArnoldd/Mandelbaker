@@ -3,22 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Mandelbaker"
         mc:Ignorable="d"
-        Title="MainWindow" Height="675" Width="1200">
+        Title="Mandelbaker" Height="675" Width="900" Background="#222">
     <Grid Margin="20">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="15*"></ColumnDefinition>
             <ColumnDefinition Width="15*"></ColumnDefinition>
             <ColumnDefinition Width="15*"></ColumnDefinition>
-            <ColumnDefinition Width="15*"></ColumnDefinition>
-            <ColumnDefinition Width="40*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="90*"></RowDefinition>
             <RowDefinition Height="10*"></RowDefinition>
         </Grid.RowDefinitions>
-        <StackPanel Margin="0 0 10 0" HorizontalAlignment="Stretch">
+        <StackPanel Margin="30 0 40 0" HorizontalAlignment="Stretch">
             <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Generic Settings</Label>
             <Label>Resolution X:</Label>
             <TextBox Text="{Binding ResolutionX}"></TextBox>
@@ -36,21 +33,22 @@
             <TextBox Text="{Binding Right}"></TextBox>
             <Label>Directory:</Label>
             <TextBox Text="{Binding Directory}" IsReadOnly="True"></TextBox>
-            <Button Click="OpenFolder" Margin="0 10 0 5" Width="90">Select Folder</Button>
+            <Button Click="SelectFolder" Margin="0 10 0 5" Width="90">Select Folder</Button>
+            <Button Click="OpenFolder" Margin="0 10 0 5" Width="90">Open Folder</Button>
             <Label>Method:</Label>
             <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}"></ComboBox>
         </StackPanel>
-        <StackPanel Margin="0 0 10 0" Grid.Column="1" HorizontalAlignment="Stretch">
+        <StackPanel Margin="30 0 40 0" Grid.Column="1" HorizontalAlignment="Stretch">
             <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Single Image Settings</Label>
             <Label>Filename:</Label>
             <TextBox Text="{Binding Filename}"></TextBox>
-            <Button Click="RenderMandelbrot">Render Mandelbrot</Button>
+            <Button Click="RenderMandelbrot" Margin="0 10 0 5">Render Mandelbrot</Button>
         </StackPanel>
-        <StackPanel Margin="0 0 10 0" Grid.Column="2" HorizontalAlignment="Stretch">
+        <StackPanel Margin="30 0 40 0" Grid.Column="2" HorizontalAlignment="Stretch">
             <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Matrix Settings</Label>
             <Label>Dimension Size:</Label>
             <TextBox Text="{Binding DimensionSize}"></TextBox>
-            <Button Click="RenderMatrix">Render Matrix</Button>
+            <Button Click="RenderMatrix" Margin="0 10 0 5">Render Matrix</Button>
         </StackPanel>
         <!--<StackPanel Margin="0 0 10 0" Grid.Column="3" HorizontalAlignment="Stretch">
             <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Animation Settings</Label>
@@ -66,6 +64,6 @@
             <TextBox Text="{Binding EndZoom}"></TextBox>
             <Button Click="RenderAnimation">Render Animation</Button>
         </StackPanel>-->
-        <Label VerticalAlignment="Bottom" Grid.ColumnSpan="4" Content="{Binding Output, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1"></Label>
+        <Label VerticalAlignment="Bottom" Grid.ColumnSpan="4" Content="{Binding Output, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Margin="30 0 0 10"></Label>
     </Grid>
 </Window>

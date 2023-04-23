@@ -2,6 +2,7 @@
 using Mandelbaker.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -65,7 +66,7 @@ namespace Mandelbaker
         //    string jsonFilename = @$"C:\Mandelbaker\CalculationInformation\Animation{_viewModel.ResolutionX}x{_viewModel.ResolutionY}_{_viewModel.FPS}fps_{_viewModel.Duration}s_{date}.json";
         //    File.WriteAllText(jsonFilename, jsonString);
         //}
-        private void OpenFolder(object sender, RoutedEventArgs e)
+        private void SelectFolder(object sender, RoutedEventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
             {
@@ -76,6 +77,11 @@ namespace Mandelbaker
                     _viewModel.Directory = dialog.SelectedPath;
                 }
             }
+        }
+        private void OpenFolder(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(_viewModel.Directory))
+                Process.Start("explorer.exe", _viewModel.Directory);
         }
     }
 }
