@@ -4,6 +4,42 @@
              xmlns:local="clr-namespace:Mandelbaker"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#222"/>
+            <Setter Property="Foreground" Value="#fff"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderThickness="1" Padding="5" BorderBrush="#fff">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#444"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#666"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#fff" />
+        </Style>
+        
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#222" />
+            <Setter Property="BorderBrush" Value="#fff" />
+            <Setter Property="Foreground" Value="#fff" />
+        </Style>
+
     </Application.Resources>
 </Application>

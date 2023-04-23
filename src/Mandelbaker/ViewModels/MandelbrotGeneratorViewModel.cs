@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Mandelbaker.ViewModels
 {
@@ -16,11 +10,13 @@ namespace Mandelbaker.ViewModels
     {
         #region Generic Properties
 
-        public int Resolution { get; set; } = 1000;
+        public int ResolutionX { get; set; } = 1000;
+        public int ResolutionY { get; set; } = 1000;
         public int Iterations { get; set; } = 255;
-        public double XLeft { get; set; } = -2;
-        public double YTop { get; set; } = 1.5;
-        public double Zoom { get; set; } = 1;
+        public double Top { get; set; } = 1.5;
+        public double Bottom { get; set; } = -1.5;
+        public double Left { get; set; } = -2;
+        public double Right { get; set; } = 1;
         private string _directory = @"C:\Mandelbaker\Output\";
         public string Directory
         {
@@ -142,7 +138,7 @@ namespace Mandelbaker.ViewModels
         }
 
 
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
+        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
