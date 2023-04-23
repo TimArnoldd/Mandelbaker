@@ -22,6 +22,20 @@ namespace Mandelbaker
 
         private void RenderMandelbrot(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                if (_viewModel.ResolutionX > 65535 ||
+                    _viewModel.ResolutionY > 65535 ||
+                    checked(_viewModel.ResolutionX * _viewModel.ResolutionY) > 715776516)
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                System.Windows.MessageBox.Show("Due to limitations in .NET 7.0 the following criteria must be met:\n- A maximum pixel dimension of 65535\n- A maximum amount of pixels of 715'776'516 (equal to 26'754 squared or 35'664x20'061 in for 16:9 images)", "Image too large", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
             MandelbrotCalculationInformation mci;
 
             if (_viewModel.Method == "CPU")

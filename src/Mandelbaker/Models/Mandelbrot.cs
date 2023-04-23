@@ -34,7 +34,7 @@ namespace Mandelbaker.Models
 
             calculationInformation.CalculationDoneDateTime = DateTime.Now;
 
-            Bitmap bitmap = new(resolutionX, resolutionY, PixelFormat.Format24bppRgb);
+            Bitmap bitmap = new(resolutionX, resolutionY, PixelFormat.Format24bppRgb); // Max bitmap size is 715'776'516 pixels
             Rectangle rect = new(0, 0, resolutionX, resolutionY);
             BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
             IntPtr ptr = bmpData.Scan0;
@@ -58,6 +58,7 @@ namespace Mandelbaker.Models
 
             Directory.CreateDirectory(directory);
             bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
+            bitmap.Dispose();
 
             calculationInformation.EndDateTime = DateTime.Now;
 
@@ -97,6 +98,7 @@ namespace Mandelbaker.Models
 
             Directory.CreateDirectory(directory);
             bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
+            bitmap.Dispose();
 
             calculationInformation.EndDateTime = DateTime.Now;
 
