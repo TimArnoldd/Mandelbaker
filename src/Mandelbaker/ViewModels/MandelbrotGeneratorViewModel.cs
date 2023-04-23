@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,7 +8,6 @@ namespace Mandelbaker.ViewModels
     public class MandelbrotGeneratorViewModel : INotifyPropertyChanged
     {
         #region Generic Properties
-
         public int ResolutionX { get; set; } = 1000;
         public int ResolutionY { get; set; } = 1000;
         public int Iterations { get; set; } = 255;
