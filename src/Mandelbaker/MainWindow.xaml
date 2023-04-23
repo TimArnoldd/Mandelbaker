@@ -20,16 +20,20 @@
         </Grid.RowDefinitions>
         <StackPanel Margin="0 0 10 0" HorizontalAlignment="Stretch">
             <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Generic Settings</Label>
-            <Label>Resolution:</Label>
-            <TextBox Text="{Binding Resolution}"></TextBox>
+            <Label>Resolution X:</Label>
+            <TextBox Text="{Binding ResolutionX}"></TextBox>
+            <Label>Resolution Y:</Label>
+            <TextBox Text="{Binding ResolutionY}"></TextBox>
             <Label>Iterations:</Label>
             <TextBox Text="{Binding Iterations}"></TextBox>
-            <Label>X-Left:</Label>
-            <TextBox Text="{Binding XLeft}"></TextBox>
-            <Label>Y-Top:</Label>
-            <TextBox Text="{Binding YTop}"></TextBox>
-            <Label>Zoom:</Label>
-            <TextBox Text="{Binding Zoom}"></TextBox>
+            <Label>Top:</Label>
+            <TextBox Text="{Binding Top}"></TextBox>
+            <Label>Bottom:</Label>
+            <TextBox Text="{Binding Bottom}"></TextBox>
+            <Label>Left:</Label>
+            <TextBox Text="{Binding Left}"></TextBox>
+            <Label>Right:</Label>
+            <TextBox Text="{Binding Right}"></TextBox>
             <Label>Directory:</Label>
             <TextBox Text="{Binding Directory}" IsReadOnly="True"></TextBox>
             <Button Click="OpenFolder" Margin="0 10 0 5" Width="90">Select Folder</Button>
@@ -48,7 +52,7 @@
             <TextBox Text="{Binding DimensionSize}"></TextBox>
             <Button Click="RenderMatrix">Render Matrix</Button>
         </StackPanel>
-        <StackPanel Margin="0 0 10 0" Grid.Column="3" HorizontalAlignment="Stretch">
+        <!--<StackPanel Margin="0 0 10 0" Grid.Column="3" HorizontalAlignment="Stretch">
             <Label FontSize="14" Margin="0 0 0 10" HorizontalAlignment="Center">Animation Settings</Label>
             <Label>FPS:</Label>
             <TextBox Text="{Binding FPS}"></TextBox>
@@ -61,7 +65,7 @@
             <Label>End Zoom:</Label>
             <TextBox Text="{Binding EndZoom}"></TextBox>
             <Button Click="RenderAnimation">Render Animation</Button>
-        </StackPanel>
-        <TextBlock VerticalAlignment="Bottom" Grid.ColumnSpan="4" Text="{Binding Output, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1"></TextBlock>
+        </StackPanel>-->
+        <Label VerticalAlignment="Bottom" Grid.ColumnSpan="4" Content="{Binding Output, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1"></Label>
     </Grid>
 </Window>

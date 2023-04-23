@@ -1,18 +1,14 @@
-﻿using System;
+﻿using ILGPU;
+using ILGPU.Runtime;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using ILGPU;
-using ILGPU.Runtime;
-using ILGPU.Runtime.CPU;
-using ILGPU.Runtime.Cuda;
 
 namespace Mandelbaker.Models
 {
@@ -28,30 +24,30 @@ namespace Mandelbaker.Models
             SetupAccelerator();
         }
 
-        public static MandelbrotCalculationInformation SaveCPUMandelbrot(int resolution, int iterations, double xLeft, double yTop, double zoom, string directory, string? filename = null)
+        public static MandelbrotCalculationInformation SaveCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right, string directory, string? filename = null)
         {
-            MandelbrotCalculationInformation calculationInformation = new(resolution, nameof(SaveCPUMandelbrot));
+            MandelbrotCalculationInformation calculationInformation = new(resolutionX, resolutionY, nameof(SaveCPUMandelbrot));
             calculationInformation.StartDateTime = DateTime.Now;
-            (double xRight, double yBottom) = CorrectAspectRatio(xLeft, yTop, zoom);
+            (double aTop, double aBottom, double aLeft, double aRight) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
 
-            int[] mandelbrot = CalculateCPUMandelbrot(resolution, iterations, xLeft, xRight, yTop, yBottom);
+            int[] mandelbrot = CalculateCPUMandelbrot(resolutionX, resolutionY, iterations, aTop, aBottom, aLeft, aRight);
 
             calculationInformation.CalculationDoneDateTime = DateTime.Now;
 
-            Bitmap bitmap = new(resolution, resolution, PixelFormat.Format24bppRgb);
-            Rectangle rect = new(0, 0, resolution, resolution);
+            Bitmap bitmap = new(resolutionX, resolutionY, PixelFormat.Format24bppRgb);
+            Rectangle rect = new(0, 0, resolutionX, resolutionY);
             BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
             IntPtr ptr = bmpData.Scan0;
             int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
-            int strideBytes = bmpData.Stride - resolution * 3;
+            int strideBytes = bmpData.Stride - resolutionY * 3;
             byte[] rgbValues = new byte[bytes];
 
-            Parallel.For(0, resolution, iHeight =>
+            Parallel.For(0, resolutionY, iHeight =>
             {
-                Parallel.For(0, resolution, iWidth =>
+                Parallel.For(0, resolutionX, iWidth =>
                 {
-                    int pixelIterations = mandelbrot[iHeight * resolution + iWidth];
-                    int index = (iHeight * resolution + iWidth) * 3 + strideBytes * iHeight;
+                    int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
+                    int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
                     rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
                     rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
                     rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
@@ -61,36 +57,36 @@ namespace Mandelbaker.Models
             bitmap.UnlockBits(bmpData);
 
             Directory.CreateDirectory(directory);
-            bitmap.Save(directory + (filename == null ? $"MB_{resolution}px.png" : filename));
+            bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
 
             calculationInformation.EndDateTime = DateTime.Now;
 
             return calculationInformation;
         }
-        public static MandelbrotCalculationInformation SaveGPUMandelbrot(int resolution, int iterations, double xLeft, double yTop, double zoom, string directory, string? filename = null)
+        public static MandelbrotCalculationInformation SaveGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right, string directory, string? filename = null)
         {
-            MandelbrotCalculationInformation calculationInformation = new(resolution, nameof(SaveGPUMandelbrot));
+            MandelbrotCalculationInformation calculationInformation = new(resolutionX, resolutionY, nameof(SaveGPUMandelbrot));
             calculationInformation.StartDateTime = DateTime.Now;
-            (double xRight, double yBottom) = CorrectAspectRatio(xLeft, yTop, zoom);
+            (double aTop, double aBottom, double aLeft, double aRight) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
 
-            int[] mandelbrot = CalculateGPUMandelbrot(resolution, iterations, xLeft, xRight, yTop, yBottom);
+            int[] mandelbrot = CalculateGPUMandelbrot(resolutionX, resolutionY, iterations, aTop, aBottom, aLeft, aRight);
 
             calculationInformation.CalculationDoneDateTime = DateTime.Now;
 
-            Bitmap bitmap = new(resolution, resolution, PixelFormat.Format24bppRgb);
-            Rectangle rect = new(0, 0, resolution, resolution);
+            Bitmap bitmap = new(resolutionX, resolutionY, PixelFormat.Format24bppRgb);
+            Rectangle rect = new(0, 0, resolutionX, resolutionY);
             BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
             IntPtr ptr = bmpData.Scan0;
             int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
-            int strideBytes = bmpData.Stride - resolution * 3;
+            int strideBytes = bmpData.Stride - resolutionY * 3;
             byte[] rgbValues = new byte[bytes];
 
-            Parallel.For(0, resolution, iHeight =>
+            Parallel.For(0, resolutionY, iHeight =>
             {
-                Parallel.For(0, resolution, iWidth =>
+                Parallel.For(0, resolutionX, iWidth =>
                 {
-                    int pixelIterations = mandelbrot[iHeight * resolution + iWidth];
-                    int index = (iHeight * resolution + iWidth) * 3 + strideBytes * iHeight;
+                    int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
+                    int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
                     rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
                     rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
                     rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
@@ -100,32 +96,35 @@ namespace Mandelbaker.Models
             bitmap.UnlockBits(bmpData);
 
             Directory.CreateDirectory(directory);
-            bitmap.Save(directory + (filename == null ? $"MB_{resolution}px.png" : filename));
+            bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
 
             calculationInformation.EndDateTime = DateTime.Now;
 
             return calculationInformation;
         }
 
-        public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderMatrix(int resolution, int iterations, int dimensionSize, double xLeft, double yTop, double zoom, string directory, bool gpuAcceleration = true)
+        public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderMatrix(int resolutionX, int resolutionY, int iterations, int dimensionSize, double top, double bottom, double left, double right, string directory, bool gpuAcceleration = true)
         {
-            MandelbrotCalculationInformation mci = new(resolution, nameof(RenderMatrix));
+            MandelbrotCalculationInformation mci = new(resolutionX, resolutionY, nameof(RenderMatrix));
             List<MandelbrotCalculationInformation> mcis = new();
             mci.StartDateTime = DateTime.Now;
             directory += @"Matrix\";
+            (double aTop, double aBottom, double aLeft, double aRight) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
 
             for (int y = 0; y < dimensionSize; y++)
             {
+                double partialTop = aTop - (aTop - aBottom) / dimensionSize * y;
+                double partialBottom = partialTop - (aTop - aBottom) / dimensionSize;
                 for (int x = 0; x < dimensionSize; x++)
                 {
-                    double partialXLeft = xLeft + 3 / zoom / dimensionSize * x;
-                    double partialYTop = yTop + -3 / zoom / dimensionSize * y;
-                    double partialZoom = zoom * dimensionSize;
-                    string filename = $"MB_{resolution / dimensionSize}px_{y * dimensionSize + x}.png";
+                    double partialLeft = aLeft + (aRight - aLeft) / dimensionSize * x;
+                    double partialRight = partialLeft + (aRight + aLeft) / dimensionSize;
+                    string filename = $"MB_{resolutionX / dimensionSize}x{resolutionY / dimensionSize}_{y * dimensionSize + x}.png";
+
                     if (gpuAcceleration)
-                        mcis.Add(SaveGPUMandelbrot(resolution / dimensionSize, iterations, partialXLeft, partialYTop, partialZoom, directory, filename));
+                        mcis.Add(SaveGPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
                     else
-                        mcis.Add(SaveCPUMandelbrot(resolution / dimensionSize, iterations, partialXLeft, partialYTop, partialZoom, directory, filename));
+                        mcis.Add(SaveCPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
                 }
             }
 
@@ -138,48 +137,47 @@ namespace Mandelbaker.Models
 
             return (mci, mcis);
         }
-        public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderAnimation(int resolution, int iterations, double xLeft, double yTop, double zoom, string directory, int fps, int duration, double endZoom, bool gpuAcceleration = true)
-        {   // ffmpeg -framerate 60 -i MB_500px_%d.png -pix_fmt yuv420p Animation2.mp4
-            MandelbrotCalculationInformation mci = new(resolution, nameof(RenderAnimation));
-            List<MandelbrotCalculationInformation> mcis = new();
-            mci.StartDateTime = DateTime.Now;
-            directory += @"Animation\";
-            int frames = fps * duration;
-            double zoomStep = Math.Pow(endZoom / zoom, 1.0 / frames);
-            double currentZoom = zoom;
+        //public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderAnimation(int resolutionX, int resolutionY, int iterations, double xLeft, double yTop, double zoom, string directory, int fps, int duration, double endZoom, bool gpuAcceleration = true)
+        //{   // ffmpeg -framerate 60 -i MB_500px_%d.png -pix_fmt yuv420p Animation2.mp4
+        //    MandelbrotCalculationInformation mci = new(resolutionX, resolutionY, nameof(RenderAnimation));
+        //    List<MandelbrotCalculationInformation> mcis = new();
+        //    mci.StartDateTime = DateTime.Now;
+        //    directory += @"Animation\";
+        //    int frames = fps * duration;
+        //    double zoomStep = Math.Pow(endZoom / zoom, 1.0 / frames);
+        //    double currentZoom = zoom;
 
-            for (int i = 0; i < frames; i++)
-            {
-                string filename = $"MB_{resolution}px_{i}.png";
-                if (gpuAcceleration)
-                    mcis.Add(SaveGPUMandelbrot(resolution, iterations, xLeft, yTop, currentZoom, directory, filename));
-                else
-                    mcis.Add(SaveCPUMandelbrot(resolution, iterations, xLeft, yTop, currentZoom, directory, filename));
-                currentZoom *= zoomStep;
-            }
+        //    for (int i = 0; i < frames; i++)
+        //    {
+        //        string filename = $"MB_{resolutionX}x{resolutionY}_{i}.png";
+        //        if (gpuAcceleration)
+        //            mcis.Add(SaveGPUMandelbrot(resolutionX, resolutionY, iterations, xLeft, yTop, currentZoom, directory, filename));
+        //        else
+        //            mcis.Add(SaveCPUMandelbrot(resolutionX, resolutionY, iterations, xLeft, yTop, currentZoom, directory, filename));
+        //        currentZoom *= zoomStep;
+        //    }
 
-            mci.CalculationDoneDateTime = mci.StartDateTime;
-            mci.EndDateTime = DateTime.Now;
-            foreach (MandelbrotCalculationInformation ci in mcis)
-            {
-                mci.CalculationDoneDateTime = mci.CalculationDoneDateTime.AddSeconds(ci.CalculationTime);
-            }
+        //    mci.CalculationDoneDateTime = mci.StartDateTime;
+        //    mci.EndDateTime = DateTime.Now;
+        //    foreach (MandelbrotCalculationInformation ci in mcis)
+        //    {
+        //        mci.CalculationDoneDateTime = mci.CalculationDoneDateTime.AddSeconds(ci.CalculationTime);
+        //    }
 
-            return (mci, mcis);
-        }
+        //    return (mci, mcis);
+        //}
 
-        // TODO: Invert Y axis (currently inverted)
-        public static int[] CalculateCPUMandelbrot(int resolution, int iterations, double xLeft, double xRight, double yTop, double yBottom)
+        public static int[] CalculateCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
-            int[] result = new int[resolution * resolution];
+            int[] result = new int[resolutionX * resolutionY];
 
-            Parallel.For(0, resolution * resolution, index =>
+            Parallel.For(0, resolutionX * resolutionY, index =>
             {
-                int iHeight = index / resolution;
-                int iWidth = index % resolution;
+                int iHeight = index / resolutionX;
+                int iWidth = index % resolutionX;
 
-                double mandelHeight = iHeight * (yBottom - yTop) / resolution + yTop;
-                double mandelWidth = iWidth * (xRight - xLeft) / resolution + xLeft;
+                double mandelHeight = top - (top - bottom) * iHeight / resolutionY;
+                double mandelWidth = left + (right - left) * iWidth / resolutionX;
 
                 var z = new Complex(mandelWidth, mandelHeight);
                 var c = z;
@@ -190,34 +188,48 @@ namespace Mandelbaker.Models
                         break;
                     z = z * z + c;
                 }
-                result[iHeight * resolution + iWidth] = i;
+                result[index] = i;
             });
 
             return result;
         }
-        public static int[] CalculateGPUMandelbrot(int resolution, int iterations, double xLeft, double xRight, double yTop, double yBottom)
+        public static int[] CalculateGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
             if (_context == null ||
                 _accelerator == null ||
                 _loadedKernel == null)
                 throw new Exception();
 
-            int[] result = new int[resolution * resolution];
-            var deviceOutput = _accelerator.Allocate1D(new int[resolution * resolution]);
-            var deviceInput = _accelerator.Allocate1D(new double[] { resolution, iterations, yTop, yBottom, xLeft, xRight });
+            int[] result = new int[resolutionX * resolutionY];
+            var deviceOutput = _accelerator.Allocate1D(new int[resolutionX * resolutionY]);
+            var deviceInput = _accelerator.Allocate1D(new double[] { resolutionX, resolutionY, iterations, top, bottom, left, right });
 
-            _loadedKernel(resolution * resolution, deviceInput.View, deviceOutput.View);
+            _loadedKernel(resolutionX * resolutionY, deviceInput.View, deviceOutput.View);
 
             result = deviceOutput.GetAsArray1D();
             return result;
         }
 
 
-        public static (double, double) CorrectAspectRatio(double xLeft, double yTop, double zoom)
+        public static (double, double, double, double) AdaptToAspectRatio(int resolutionX, int resolutionY, double top, double bottom, double left, double right)
         {
-            double xRight = xLeft + 3 / zoom;
-            double yBottom = yTop - 3 / zoom;
-            return (xRight, yBottom);
+            double targetRatio = (double)resolutionX / resolutionY;
+            double currentRatio = (right - left) / (top - bottom);
+            if (targetRatio > currentRatio) // = targetRatio wider
+            {
+                double width = (top - bottom) * targetRatio;
+                double deltaWidth = width - (right - left);
+                right += deltaWidth / 2;
+                left -= deltaWidth / 2;
+            }
+            else if (targetRatio < currentRatio) // = targetRatio taller
+            {
+                double height = (right - left) / targetRatio;
+                double deltaHeight = height - (top - bottom);
+                top += deltaHeight / 2;
+                bottom -= deltaHeight / 2;
+            }
+            return (top, bottom, left, right);
         }
 
         public static void SetupAccelerator()
@@ -233,18 +245,20 @@ namespace Mandelbaker.Models
             {
                 int iHeight = index / (int)input[0];
                 int iWidth = index % (int)input[0];
-                double mandelHeight = iHeight * (input[3] - input[2]) / input[0] + input[2];
-                double mandelWidth = iWidth * (input[5] - input[4]) / input[0] + input[4];
+
+                double mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
+                double mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
+
                 var z = new Complex(mandelWidth, mandelHeight);
                 var c = z;
                 int i;
-                for (i = 0; i < input[1]; i++)
+                for (i = 0; i < input[2]; i++)
                 {
                     if (Complex.Abs(z) > 2)
                         break;
                     z = z * z + c;
                 }
-                output[(int)(iHeight * input[0] + iWidth)] = i;
+                output[index] = i; // cast to int?
             });
         }
 

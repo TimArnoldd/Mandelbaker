@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mandelbaker.Models
 {
@@ -16,7 +12,8 @@ namespace Mandelbaker.Models
         public double FullTime => (EndDateTime - StartDateTime).TotalSeconds;
         public double PrintingTime => (EndDateTime - CalculationDoneDateTime).TotalSeconds;
 
-        public int Resolution { get; set; }
+        public int ResolutionX { get; set; }
+        public int ResolutionY { get; set; }
         public string Method { get; set; } = string.Empty;
 
 
@@ -24,15 +21,16 @@ namespace Mandelbaker.Models
         {
 
         }
-        public MandelbrotCalculationInformation(int resolution, string method)
+        public MandelbrotCalculationInformation(int resolutionX, int resolutionY, string method)
         {
-            Resolution = resolution;
+            ResolutionX = resolutionX;
+            ResolutionY = resolutionY;
             Method = method;
         }
 
         public override string ToString()
         {
-            return $"{Resolution}px with {Method}: Total = {FullTime}s, Calculation = {CalculationTime}s, Printing = {PrintingTime}s";
+            return $"{ResolutionX}x{ResolutionY} with {Method}: Total = {FullTime}s, Calculation = {CalculationTime}s, Printing = {PrintingTime}s";
         }
     }
 }
