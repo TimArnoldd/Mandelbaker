@@ -58,6 +58,7 @@ namespace Mandelbaker.Models
 
             Directory.CreateDirectory(directory);
             bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
+            bitmap.Dispose();
 
             calculationInformation.EndDateTime = DateTime.Now;
 
@@ -97,6 +98,7 @@ namespace Mandelbaker.Models
 
             Directory.CreateDirectory(directory);
             bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
+            bitmap.Dispose();
 
             calculationInformation.EndDateTime = DateTime.Now;
 
