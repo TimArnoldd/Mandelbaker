@@ -1,4 +1,5 @@
-﻿using Mandelbaker.Models;
+﻿using Mandelbaker.Enums;
+using Mandelbaker.Models;
 using Mandelbaker.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -38,13 +39,17 @@ namespace Mandelbaker
             }
             MandelbrotCalculationInformation mci;
 
-            if (_viewModel.Method == "CPU")
+            if (_viewModel.Method == CalculationMethod.GPUFloat)
             {
-                mci = Mandelbrot.SaveCPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                mci = Mandelbrot.SaveFloatGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+            }
+            else if (_viewModel.Method == CalculationMethod.GPUDouble)
+            {
+                mci = Mandelbrot.SaveDoubleGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
             }
             else
             {
-                mci = Mandelbrot.SaveGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                mci = Mandelbrot.SaveCPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
             }
             _viewModel.Output = "Render complete: " + mci.ToString();
         }
@@ -53,7 +58,7 @@ namespace Mandelbaker
             MandelbrotCalculationInformation mci;
             List<MandelbrotCalculationInformation> mcis;
 
-            (mci, mcis) = Mandelbrot.RenderMatrix(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.DimensionSize, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Method == "GPU" ? true : false);
+            (mci, mcis) = Mandelbrot.RenderMatrix(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.DimensionSize, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Method);
             _viewModel.Output = "Render complete: " + mci.ToString();
 
             string jsonString = JsonSerializer.Serialize((mci, mcis), new JsonSerializerOptions() { WriteIndented = true });

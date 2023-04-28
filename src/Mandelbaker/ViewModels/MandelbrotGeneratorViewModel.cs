@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Mandelbaker.Enums;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -27,8 +29,13 @@ namespace Mandelbaker.ViewModels
                 NotifyPropertyChanged();
             }
         }
-        public string Method { get; set; } = "CPU";
-        public List<string> Methods { get; set; }
+        public CalculationMethod Method { get; set; }
+        public string MethodString
+        {
+            get => Method.ToString();
+            set => Method = (CalculationMethod)Enum.Parse(typeof(CalculationMethod), value);
+        }
+        public List<string> Methods { get; set; } = new();
         private string _output = string.Empty;
         public string Output
         {
@@ -128,11 +135,10 @@ namespace Mandelbaker.ViewModels
 
         public MandelbrotGeneratorViewModel()
         {
-            Methods = new()
+            foreach (var method in Enum.GetValues(typeof(CalculationMethod)))
             {
-                "CPU",
-                "GPU"
-            };
+                Methods.Add(method.ToString());
+            }
         }
 
 
