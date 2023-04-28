@@ -1,5 +1,7 @@
 ﻿using ILGPU;
 using ILGPU.Runtime;
+using Mandelbaker.Enums;
+using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,6 +11,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Mandelbaker.Models
 {
@@ -17,9 +20,10 @@ namespace Mandelbaker.Models
         private static Context? _context;
         private static Device? _device;
         private static Accelerator? _accelerator;
-        private static Action<Index1D, ArrayView<double>, ArrayView<int>>? _loadedKernel;
+        private static Action<Index1D, ArrayView<double>, ArrayView<int>>? _loadedDoubleKernel;
+        private static Action<Index1D, ArrayView<float>, ArrayView<int>>? _loadedFloatKernel;
 
-        static Mandelbrot()
+        public static void Initialize()
         {
             SetupAccelerator();
         }
@@ -64,13 +68,53 @@ namespace Mandelbaker.Models
 
             return calculationInformation;
         }
-        public static MandelbrotCalculationInformation SaveGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right, string directory, string? filename = null)
+        public static MandelbrotCalculationInformation SaveDoubleGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right, string directory, string? filename = null)
         {
-            MandelbrotCalculationInformation calculationInformation = new(resolutionX, resolutionY, nameof(SaveGPUMandelbrot));
+            MandelbrotCalculationInformation calculationInformation = new(resolutionX, resolutionY, nameof(SaveDoubleGPUMandelbrot));
             calculationInformation.StartDateTime = DateTime.Now;
             (double aTop, double aBottom, double aLeft, double aRight) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
 
-            int[] mandelbrot = CalculateGPUMandelbrot(resolutionX, resolutionY, iterations, aTop, aBottom, aLeft, aRight);
+            int[] mandelbrot = CalculateDoubleGPUMandelbrot(resolutionX, resolutionY, iterations, aTop, aBottom, aLeft, aRight);
+
+            calculationInformation.CalculationDoneDateTime = DateTime.Now;
+
+            Bitmap bitmap = new(resolutionX, resolutionY, PixelFormat.Format24bppRgb);
+            Rectangle rect = new(0, 0, resolutionX, resolutionY);
+            BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
+            IntPtr ptr = bmpData.Scan0;
+            int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
+            int strideBytes = bmpData.Stride - resolutionY * 3;
+            byte[] rgbValues = new byte[bytes];
+
+            Parallel.For(0, resolutionY, iHeight =>
+            {
+                Parallel.For(0, resolutionX, iWidth =>
+                {
+                    int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
+                    int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
+                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+                });
+            });
+            Marshal.Copy(rgbValues, 0, ptr, bytes);
+            bitmap.UnlockBits(bmpData);
+
+            Directory.CreateDirectory(directory);
+            bitmap.Save(directory + (filename == null ? $"MB_{resolutionX}x{resolutionY}.png" : filename));
+            bitmap.Dispose();
+
+            calculationInformation.EndDateTime = DateTime.Now;
+
+            return calculationInformation;
+        }
+        public static MandelbrotCalculationInformation SaveFloatGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right, string directory, string? filename = null)
+        {
+            MandelbrotCalculationInformation calculationInformation = new(resolutionX, resolutionY, nameof(SaveFloatGPUMandelbrot));
+            calculationInformation.StartDateTime = DateTime.Now;
+            (double aTop, double aBottom, double aLeft, double aRight) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
+
+            int[] mandelbrot = CalculateFloatGPUMandelbrot(resolutionX, resolutionY, iterations, aTop, aBottom, aLeft, aRight);
 
             calculationInformation.CalculationDoneDateTime = DateTime.Now;
 
@@ -105,7 +149,7 @@ namespace Mandelbaker.Models
             return calculationInformation;
         }
 
-        public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderMatrix(int resolutionX, int resolutionY, int iterations, int dimensionSize, double top, double bottom, double left, double right, string directory, bool gpuAcceleration = true)
+        public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderMatrix(int resolutionX, int resolutionY, int iterations, int dimensionSize, double top, double bottom, double left, double right, string directory, CalculationMethod method)
         {
             MandelbrotCalculationInformation mci = new(resolutionX, resolutionY, nameof(RenderMatrix));
             List<MandelbrotCalculationInformation> mcis = new();
@@ -123,10 +167,18 @@ namespace Mandelbaker.Models
                     double partialRight = partialLeft + (aRight + aLeft) / dimensionSize;
                     string filename = $"MB_{resolutionX / dimensionSize}x{resolutionY / dimensionSize}_{y * dimensionSize + x}.png";
 
-                    if (gpuAcceleration)
-                        mcis.Add(SaveGPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
-                    else
-                        mcis.Add(SaveCPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
+                    switch (method)
+                    {
+                        case CalculationMethod.CPU:
+                            mcis.Add(SaveCPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
+                            break;
+                        case CalculationMethod.GPUFloat:
+                            mcis.Add(SaveFloatGPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
+                            break;
+                        case CalculationMethod.GPUDouble:
+                            mcis.Add(SaveDoubleGPUMandelbrot(resolutionX / dimensionSize, resolutionY / dimensionSize, iterations, partialTop, partialBottom, partialLeft, partialRight, directory, filename));
+                            break;
+                    }
                 }
             }
 
@@ -169,7 +221,7 @@ namespace Mandelbaker.Models
         //    return (mci, mcis);
         //}
 
-        public static int[] CalculateCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
+        private static int[] CalculateCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
             int[] result = new int[resolutionX * resolutionY];
 
@@ -195,25 +247,41 @@ namespace Mandelbaker.Models
 
             return result;
         }
-        public static int[] CalculateGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
+        private static int[] CalculateDoubleGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
             if (_context == null ||
                 _accelerator == null ||
-                _loadedKernel == null)
-                throw new Exception();
+                _loadedDoubleKernel == null)
+                throw new Exception("GPU Acceleration with double values did not initialize correctly.");
 
             int[] result = new int[resolutionX * resolutionY];
             var deviceOutput = _accelerator.Allocate1D(new int[resolutionX * resolutionY]);
             var deviceInput = _accelerator.Allocate1D(new double[] { resolutionX, resolutionY, iterations, top, bottom, left, right });
 
-            _loadedKernel(resolutionX * resolutionY, deviceInput.View, deviceOutput.View);
+            _loadedDoubleKernel(resolutionX * resolutionY, deviceInput.View, deviceOutput.View);
+
+            result = deviceOutput.GetAsArray1D();
+            return result;
+        }
+        private static int[] CalculateFloatGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
+        {
+            if (_context == null ||
+                _accelerator == null ||
+                _loadedFloatKernel == null)
+                throw new Exception("GPU Acceleration with float values did not initialize correctly.");
+
+            int[] result = new int[resolutionX * resolutionY];
+            var deviceOutput = _accelerator.Allocate1D(new int[resolutionX * resolutionY]);
+            var deviceInput = _accelerator.Allocate1D(new float[] { resolutionX, resolutionY, iterations, (float)top, (float)bottom, (float)left, (float)right });
+
+            _loadedFloatKernel(resolutionX * resolutionY, deviceInput.View, deviceOutput.View);
 
             result = deviceOutput.GetAsArray1D();
             return result;
         }
 
 
-        public static (double, double, double, double) AdaptToAspectRatio(int resolutionX, int resolutionY, double top, double bottom, double left, double right)
+        private static (double, double, double, double) AdaptToAspectRatio(int resolutionX, int resolutionY, double top, double bottom, double left, double right)
         {
             double targetRatio = (double)resolutionX / resolutionY;
             double currentRatio = (right - left) / (top - bottom);
@@ -234,34 +302,116 @@ namespace Mandelbaker.Models
             return (top, bottom, left, right);
         }
 
-        public static void SetupAccelerator()
+        private static void SetupAccelerator()
         {
             _context = Context.CreateDefault();
-            _device = _context.Devices.Where(x => x.AcceleratorType != AcceleratorType.CPU).FirstOrDefault();
-            if (_device == null)
-                throw new NotSupportedException();
-            _accelerator = _device.CreateAccelerator(_context);
-
-            _loadedKernel = _accelerator.LoadAutoGroupedStreamKernel(
-            (Index1D index, ArrayView<double> input, ArrayView<int> output) =>
+            var devices = _context.Devices.Where(x => x.AcceleratorType != AcceleratorType.CPU);
+            if (!devices.Any())
             {
-                int iHeight = index / (int)input[0];
-                int iWidth = index % (int)input[0];
-
-                double mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
-                double mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
-
-                var z = new Complex(mandelWidth, mandelHeight);
-                var c = z;
-                int i;
-                for (i = 0; i < input[2]; i++)
+                MessageBox.Show("No compatible graphics processor could be found.", "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (devices.Count() == 1)
+            {
+                _device = devices.First();
+            }
+            else
+            {
+                DeviceSelector deviceSelector = new(devices.Select(x => x.Name).ToList());
+                if (deviceSelector.ShowDialog() != true)
                 {
-                    if (Complex.Abs(z) > 2)
-                        break;
-                    z = z * z + c;
+                    MessageBox.Show("Graphics processor could not be set.", "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
-                output[index] = i; // cast to int?
-            });
+                _device = devices.First(x => x.Name == deviceSelector.SelectedDeviceName);
+            }
+
+            _accelerator = _device.CreateAccelerator(_context);
+            try
+            {
+                _loadedFloatKernel = _accelerator.LoadAutoGroupedStreamKernel(
+                (Index1D index, ArrayView<float> input, ArrayView<int> output) =>
+                {
+                    int iHeight = index / (int)input[0];
+                    int iWidth = index % (int)input[0];
+
+                    float mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
+                    float mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
+
+                    var z = new Complex32(mandelWidth, mandelHeight);
+                    var c = z;
+                    int i;
+                    for (i = 0; i < input[2]; i++)
+                    {
+                        if (Abs(z) > 2)
+                            break;
+                        z = z * z + c;
+                    }
+                    output[index] = i; // cast to int?
+                });
+                _loadedDoubleKernel = _accelerator.LoadAutoGroupedStreamKernel(
+                (Index1D index, ArrayView<double> input, ArrayView<int> output) =>
+                {
+                    int iHeight = index / (int)input[0];
+                    int iWidth = index % (int)input[0];
+
+                    double mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
+                    double mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
+
+                    var z = new Complex(mandelWidth, mandelHeight);
+                    var c = z;
+                    int i;
+                    for (i = 0; i < input[2]; i++)
+                    {
+                        if (Complex.Abs(z) > 2)
+                            break;
+                        z = z * z + c;
+                    }
+                    output[index] = i; // cast to int?
+                });
+            }
+            catch (Exception ex)
+            {
+                string messageBoxText = "GPU Acceleration may not be fully supported:\n";
+                if (ex.InnerException is CapabilityNotSupportedException cnse)
+                {
+                    messageBoxText += cnse.Message;
+                }
+                else
+                {
+                    messageBoxText += $"{ex.Message}\n{ex.InnerException?.Message}";
+                }
+                MessageBox.Show(messageBoxText, "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private static float Abs(Complex32 x) // Needed because MathNet.Numerics.Complex32.Abs() is using double calculations internally
+        {
+            if (float.IsNaN(x.Real) || float.IsNaN(x.Imaginary))
+            {
+                return float.NaN;
+            }
+
+            if (float.IsInfinity(x.Real) || float.IsInfinity(x.Imaginary))
+            {
+                return float.PositiveInfinity;
+            }
+
+            float num = MathF.Abs(x.Real);
+            float num2 = MathF.Abs(x.Imaginary);
+            if (num > num2)
+            {
+                float num3 = num2 / num;
+                return num * MathF.Sqrt(1.0f + num3 * num3);
+            }
+
+            if (num == 0f)
+            {
+                return num2;
+            }
+
+            float num4 = num / num2;
+            return num2 * MathF.Sqrt(1.0f + num4 * num4);
         }
 
         #region obsolete
