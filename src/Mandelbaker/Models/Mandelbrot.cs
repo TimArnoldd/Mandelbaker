@@ -11,6 +11,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Mandelbaker.Models
 {
@@ -22,7 +23,7 @@ namespace Mandelbaker.Models
         private static Action<Index1D, ArrayView<double>, ArrayView<int>>? _loadedDoubleKernel;
         private static Action<Index1D, ArrayView<float>, ArrayView<int>>? _loadedFloatKernel;
 
-        static Mandelbrot()
+        public static void Initialize()
         {
             SetupAccelerator();
         }
@@ -220,7 +221,7 @@ namespace Mandelbaker.Models
         //    return (mci, mcis);
         //}
 
-        public static int[] CalculateCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
+        private static int[] CalculateCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
             int[] result = new int[resolutionX * resolutionY];
 
@@ -246,12 +247,12 @@ namespace Mandelbaker.Models
 
             return result;
         }
-        public static int[] CalculateDoubleGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
+        private static int[] CalculateDoubleGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
             if (_context == null ||
                 _accelerator == null ||
                 _loadedDoubleKernel == null)
-                throw new Exception();
+                throw new Exception("GPU Acceleration with double values did not initialize correctly.");
 
             int[] result = new int[resolutionX * resolutionY];
             var deviceOutput = _accelerator.Allocate1D(new int[resolutionX * resolutionY]);
@@ -262,12 +263,12 @@ namespace Mandelbaker.Models
             result = deviceOutput.GetAsArray1D();
             return result;
         }
-        public static int[] CalculateFloatGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
+        private static int[] CalculateFloatGPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
             if (_context == null ||
                 _accelerator == null ||
                 _loadedFloatKernel == null)
-                throw new Exception();
+                throw new Exception("GPU Acceleration with float values did not initialize correctly.");
 
             int[] result = new int[resolutionX * resolutionY];
             var deviceOutput = _accelerator.Allocate1D(new int[resolutionX * resolutionY]);
@@ -280,7 +281,7 @@ namespace Mandelbaker.Models
         }
 
 
-        public static (double, double, double, double) AdaptToAspectRatio(int resolutionX, int resolutionY, double top, double bottom, double left, double right)
+        private static (double, double, double, double) AdaptToAspectRatio(int resolutionX, int resolutionY, double top, double bottom, double left, double right)
         {
             double targetRatio = (double)resolutionX / resolutionY;
             double currentRatio = (right - left) / (top - bottom);
@@ -301,54 +302,72 @@ namespace Mandelbaker.Models
             return (top, bottom, left, right);
         }
 
-        public static void SetupAccelerator()
+        private static void SetupAccelerator()
         {
             _context = Context.CreateDefault();
             _device = _context.Devices.Where(x => x.AcceleratorType != AcceleratorType.CPU).FirstOrDefault();
             if (_device == null)
-                throw new NotSupportedException();
+            {
+                MessageBox.Show("No compatible graphics processor could be found.", "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             _accelerator = _device.CreateAccelerator(_context);
-
-            _loadedDoubleKernel = _accelerator.LoadAutoGroupedStreamKernel(
-            (Index1D index, ArrayView<double> input, ArrayView<int> output) =>
+            try
             {
-                int iHeight = index / (int)input[0];
-                int iWidth = index % (int)input[0];
-
-                double mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
-                double mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
-
-                var z = new Complex(mandelWidth, mandelHeight);
-                var c = z;
-                int i;
-                for (i = 0; i < input[2]; i++)
+                _loadedFloatKernel = _accelerator.LoadAutoGroupedStreamKernel(
+                (Index1D index, ArrayView<float> input, ArrayView<int> output) =>
                 {
-                    if (Complex.Abs(z) > 2)
-                        break;
-                    z = z * z + c;
-                }
-                output[index] = i; // cast to int?
-            });
-            _loadedFloatKernel = _accelerator.LoadAutoGroupedStreamKernel(
-            (Index1D index, ArrayView<float> input, ArrayView<int> output) =>
+                    int iHeight = index / (int)input[0];
+                    int iWidth = index % (int)input[0];
+
+                    float mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
+                    float mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
+
+                    var z = new Complex32(mandelWidth, mandelHeight);
+                    var c = z;
+                    int i;
+                    for (i = 0; i < input[2]; i++)
+                    {
+                        if (Abs(z) > 2)
+                            break;
+                        z = z * z + c;
+                    }
+                    output[index] = i; // cast to int?
+                });
+                _loadedDoubleKernel = _accelerator.LoadAutoGroupedStreamKernel(
+                (Index1D index, ArrayView<double> input, ArrayView<int> output) =>
+                {
+                    int iHeight = index / (int)input[0];
+                    int iWidth = index % (int)input[0];
+
+                    double mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
+                    double mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
+
+                    var z = new Complex(mandelWidth, mandelHeight);
+                    var c = z;
+                    int i;
+                    for (i = 0; i < input[2]; i++)
+                    {
+                        if (Complex.Abs(z) > 2)
+                            break;
+                        z = z * z + c;
+                    }
+                    output[index] = i; // cast to int?
+                });
+            }
+            catch (Exception ex)
             {
-                int iHeight = index / (int)input[0];
-                int iWidth = index % (int)input[0];
-
-                float mandelHeight = input[3] - (input[3] - input[4]) * iHeight / input[1];
-                float mandelWidth = input[5] + (input[6] - input[5]) * iWidth / input[0];
-
-                var z = new Complex32(mandelWidth, mandelHeight);
-                var c = z;
-                int i;
-                for (i = 0; i < input[2]; i++)
+                string messageBoxText = "GPU Acceleration may not be fully supported:\n";
+                if (ex.InnerException is CapabilityNotSupportedException cnse)
                 {
-                    if (Abs(z) > 2)
-                        break;
-                    z = z * z + c;
+                    messageBoxText += cnse.Message;
                 }
-                output[index] = i; // cast to int?
-            });
+                else
+                {
+                    messageBoxText += $"{ex.Message}\n{ex.InnerException?.Message}";
+                }
+                MessageBox.Show(messageBoxText, "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private static float Abs(Complex32 x) // Needed because MathNet.Numerics.Complex32.Abs() is using double calculations internally

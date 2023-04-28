@@ -19,6 +19,7 @@ namespace Mandelbaker
             _viewModel = new();
             DataContext = _viewModel;
             InitializeComponent();
+            Mandelbrot.Initialize();
         }
 
         private void RenderMandelbrot(object sender, RoutedEventArgs e)
@@ -38,36 +39,49 @@ namespace Mandelbaker
                 return;
             }
             MandelbrotCalculationInformation mci;
-
-            if (_viewModel.Method == CalculationMethod.GPUFloat)
+            try
             {
-                mci = Mandelbrot.SaveFloatGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                if (_viewModel.Method == CalculationMethod.GPUFloat)
+                {
+                    mci = Mandelbrot.SaveFloatGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                }
+                else if (_viewModel.Method == CalculationMethod.GPUDouble)
+                {
+                    mci = Mandelbrot.SaveDoubleGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                }
+                else
+                {
+                    mci = Mandelbrot.SaveCPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                }
+                _viewModel.Output = "Render complete: " + mci.ToString();
             }
-            else if (_viewModel.Method == CalculationMethod.GPUDouble)
+            catch (Exception ex)
             {
-                mci = Mandelbrot.SaveDoubleGPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
+                System.Windows.MessageBox.Show(ex.Message, "An error occured", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            else
-            {
-                mci = Mandelbrot.SaveCPUMandelbrot(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Filename);
-            }
-            _viewModel.Output = "Render complete: " + mci.ToString();
         }
         private void RenderMatrix(object sender, RoutedEventArgs e)
         {
             MandelbrotCalculationInformation mci;
             List<MandelbrotCalculationInformation> mcis;
+            
+            try
+            {
+                (mci, mcis) = Mandelbrot.RenderMatrix(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.DimensionSize, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Method);
+                _viewModel.Output = "Render complete: " + mci.ToString();
 
-            (mci, mcis) = Mandelbrot.RenderMatrix(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.DimensionSize, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.Directory, _viewModel.Method);
-            _viewModel.Output = "Render complete: " + mci.ToString();
+                string jsonString = JsonSerializer.Serialize((mci, mcis), new JsonSerializerOptions() { WriteIndented = true });
 
-            string jsonString = JsonSerializer.Serialize((mci, mcis), new JsonSerializerOptions() { WriteIndented = true });
-
-            Directory.CreateDirectory(@"C:\Mandelbaker\CalculationInformation\");
-            DateTime now = DateTime.Now;
-            string date = now.ToString("dd-MM-yyyy_HH-mm-ss");
-            string jsonFilename = @$"C:\Mandelbaker\CalculationInformation\Matrix_{_viewModel.ResolutionX}x{_viewModel.ResolutionY}_{date}.json";
-            File.WriteAllText(jsonFilename, jsonString);
+                Directory.CreateDirectory(@"C:\Mandelbaker\CalculationInformation\");
+                DateTime now = DateTime.Now;
+                string date = now.ToString("dd-MM-yyyy_HH-mm-ss");
+                string jsonFilename = @$"C:\Mandelbaker\CalculationInformation\Matrix_{_viewModel.ResolutionX}x{_viewModel.ResolutionY}_{date}.json";
+                File.WriteAllText(jsonFilename, jsonString);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message, "An error occured", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         //private void RenderAnimation(object sender, RoutedEventArgs e)
         //{
