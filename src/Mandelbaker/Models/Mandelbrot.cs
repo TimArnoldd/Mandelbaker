@@ -305,12 +305,27 @@ namespace Mandelbaker.Models
         private static void SetupAccelerator()
         {
             _context = Context.CreateDefault();
-            _device = _context.Devices.Where(x => x.AcceleratorType != AcceleratorType.CPU).FirstOrDefault();
-            if (_device == null)
+            var devices = _context.Devices.Where(x => x.AcceleratorType != AcceleratorType.CPU);
+            if (!devices.Any())
             {
                 MessageBox.Show("No compatible graphics processor could be found.", "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            if (devices.Count() == 1)
+            {
+                _device = devices.First();
+            }
+            else
+            {
+                DeviceSelector deviceSelector = new(devices.Select(x => x.Name).ToList());
+                if (deviceSelector.ShowDialog() != true)
+                {
+                    MessageBox.Show("Graphics processor could not be set.", "GPU initialization failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                _device = devices.First(x => x.Name == deviceSelector.SelectedDeviceName);
+            }
+
             _accelerator = _device.CreateAccelerator(_context);
             try
             {
