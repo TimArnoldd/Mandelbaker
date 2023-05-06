@@ -83,22 +83,23 @@ namespace Mandelbaker
                 System.Windows.MessageBox.Show(ex.Message, "An error occured", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        //private void RenderAnimation(object sender, RoutedEventArgs e)
-        //{
-        //    MandelbrotCalculationInformation mci;
-        //    List<MandelbrotCalculationInformation> mcis;
+        private void RenderAnimation(object sender, RoutedEventArgs e)
+        {
+            MandelbrotCalculationInformation mci;
+            List<MandelbrotCalculationInformation> mcis;
 
-        //    (mci, mcis) = Mandelbrot.RenderAnimation(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.XLeft, _viewModel.YTop, _viewModel.Zoom, _viewModel.Directory, _viewModel.FPS, _viewModel.Duration, _viewModel.EndZoom, _viewModel.Method == "GPU" ? true : false);
-        //    _viewModel.Output = "Render complete: " + mci.ToString();
+            (mci, mcis) = Mandelbrot.RenderAnimation(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Fps, _viewModel.VideoDuration, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.EndX, _viewModel.EndY, _viewModel.EndZoom, _viewModel.Directory, _viewModel.Method);
+            _viewModel.Output = "Render complete: " + mci.ToString();
 
-        //    string jsonString = JsonSerializer.Serialize((mci, mcis), new JsonSerializerOptions() { WriteIndented = true });
+            string jsonString = JsonSerializer.Serialize(mcis, new JsonSerializerOptions() { WriteIndented = true });
 
-        //    Directory.CreateDirectory(@"C:\Mandelbaker\CalculationInformation\");
-        //    DateTime now = DateTime.Now;
-        //    string date = now.ToString("dd-MM-yyyy_HH-mm-ss");
-        //    string jsonFilename = @$"C:\Mandelbaker\CalculationInformation\Animation{_viewModel.ResolutionX}x{_viewModel.ResolutionY}_{_viewModel.FPS}fps_{_viewModel.Duration}s_{date}.json";
-        //    File.WriteAllText(jsonFilename, jsonString);
-        //}
+            Directory.CreateDirectory(@"C:\Mandelbaker\CalculationInformation\");
+            DateTime now = DateTime.Now;
+            string date = now.ToString("dd-MM-yyyy_HH-mm-ss");
+            string jsonFilename = @$"C:\Mandelbaker\CalculationInformation\Animation{_viewModel.ResolutionX}x{_viewModel.ResolutionY}_{_viewModel.Fps}fps_{_viewModel.VideoDuration}s_{date}.json";
+            File.WriteAllText(jsonFilename, jsonString);
+        }
+
         private void SelectFolder(object sender, RoutedEventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())

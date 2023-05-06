@@ -99,7 +99,7 @@ namespace Mandelbaker.ViewModels
         #region Animation Properties
 
         private int _fps = 30;
-        public int FPS
+        public int Fps
         {
             get => _fps;
             set
@@ -112,23 +112,23 @@ namespace Mandelbaker.ViewModels
                     _fps = value;
             }
         }
-        private int _duration = 10;
-        public int Duration
+        private int _videoDuration = 10;
+        public int VideoDuration
         {
-            get => _duration;
+            get => _videoDuration;
             set
             {
                 if (value < 1)
-                    _duration = 1;
+                    _videoDuration = 1;
                 else if (value > 10 * 3600)
-                    _duration = 10 * 3600;
+                    _videoDuration = 10 * 3600;
                 else
-                    _duration = value;
+                    _videoDuration = value;
             }
         }
-        public double EndXLeft { get; set; } = -1.187729;
-        public double EndYTop { get; set; } = 0.242367;
-        public double EndZoom { get; set; } = 300000;
+        public double EndX { get; set; } = 0.36024044343761435;
+        public double EndY { get; set; } = -0.6413130610648031;
+        public double EndZoom { get; set; } = 3000000000000000;
 
         #endregion
 
