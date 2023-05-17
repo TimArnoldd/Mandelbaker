@@ -4,6 +4,7 @@ using Mandelbaker.Enums;
 using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -32,9 +33,9 @@ namespace Mandelbaker.Models
         {
             MandelbrotCalculationInformation calculationInformation = new(resolutionX, resolutionY, nameof(SaveCPUMandelbrot));
             calculationInformation.StartDateTime = DateTime.Now;
-            (double aTop, double aBottom, double aLeft, double aRight) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
+            (top, bottom, left, right) = AdaptToAspectRatio(resolutionX, resolutionY, top, bottom, left, right);
 
-            int[] mandelbrot = CalculateCPUMandelbrot(resolutionX, resolutionY, iterations, aTop, aBottom, aLeft, aRight);
+            int[] mandelbrot = CalculateCPUMandelbrot(resolutionX, resolutionY, iterations, top, bottom, left, right);
 
             calculationInformation.CalculationDoneDateTime = DateTime.Now;
 
@@ -52,9 +53,21 @@ namespace Mandelbaker.Models
                 {
                     int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
                     int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
-                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
-                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
-                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+
+                    int r, g, b;
+                    if (pixelIterations == iterations)
+                        HSVtoRGB(0, 0, 0, out r, out g, out b);
+                    else
+                        HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
+
+                    rgbValues[index] = (byte)b;     // B
+                    rgbValues[index + 1] = (byte)g; // G
+                    rgbValues[index + 2] = (byte)r; // R
+
+                    // Old color scheme
+                    //rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    //rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    //rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
                 });
             });
             Marshal.Copy(rgbValues, 0, ptr, bytes);
@@ -92,9 +105,21 @@ namespace Mandelbaker.Models
                 {
                     int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
                     int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
-                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
-                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
-                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+
+                    int r, g, b;
+                    if (pixelIterations == iterations)
+                        HSVtoRGB(0, 0, 0, out r, out g, out b);
+                    else
+                        HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
+
+                    rgbValues[index] = (byte)b;     // B
+                    rgbValues[index + 1] = (byte)g; // G
+                    rgbValues[index + 2] = (byte)r; // R
+
+                    // Old color scheme
+                    //rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    //rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    //rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
                 });
             });
             Marshal.Copy(rgbValues, 0, ptr, bytes);
@@ -132,9 +157,21 @@ namespace Mandelbaker.Models
                 {
                     int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
                     int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
-                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
-                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
-                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+
+                    int r, g, b;
+                    if (pixelIterations == iterations)
+                        HSVtoRGB(0, 0, 0, out r, out g, out b);
+                    else
+                        HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
+
+                    rgbValues[index] = (byte)b;     // B
+                    rgbValues[index + 1] = (byte)g; // G
+                    rgbValues[index + 2] = (byte)r; // R
+
+                    // Old color scheme
+                    //rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    //rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    //rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
                 });
             });
             Marshal.Copy(rgbValues, 0, ptr, bytes);
@@ -191,35 +228,75 @@ namespace Mandelbaker.Models
 
             return (mci, mcis);
         }
-        //public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderAnimation(int resolutionX, int resolutionY, int iterations, double xLeft, double yTop, double zoom, string directory, int fps, int duration, double endZoom, bool gpuAcceleration = true)
-        //{   // ffmpeg -framerate 60 -i MB_500px_%d.png -pix_fmt yuv420p Animation2.mp4
-        //    MandelbrotCalculationInformation mci = new(resolutionX, resolutionY, nameof(RenderAnimation));
-        //    List<MandelbrotCalculationInformation> mcis = new();
-        //    mci.StartDateTime = DateTime.Now;
-        //    directory += @"Animation\";
-        //    int frames = fps * duration;
-        //    double zoomStep = Math.Pow(endZoom / zoom, 1.0 / frames);
-        //    double currentZoom = zoom;
 
-        //    for (int i = 0; i < frames; i++)
-        //    {
-        //        string filename = $"MB_{resolutionX}x{resolutionY}_{i}.png";
-        //        if (gpuAcceleration)
-        //            mcis.Add(SaveGPUMandelbrot(resolutionX, resolutionY, iterations, xLeft, yTop, currentZoom, directory, filename));
-        //        else
-        //            mcis.Add(SaveCPUMandelbrot(resolutionX, resolutionY, iterations, xLeft, yTop, currentZoom, directory, filename));
-        //        currentZoom *= zoomStep;
-        //    }
+        public static (MandelbrotCalculationInformation, List<MandelbrotCalculationInformation>) RenderAnimation(
+            int resolutionX,
+            int resolutionY,
+            int iterations,
+            int fps,
+            int videoDuration,
+            double startTop,
+            double startBottom,
+            double startLeft,
+            double startRight,
+            double endX,
+            double endY,
+            double endZoom,
+            string directory,
+            CalculationMethod method,
+            bool cleanAnimationDirectory)
+        {
+            
+            (startTop, startBottom, startLeft, startRight) = AdaptToAspectRatio(resolutionX, resolutionY, startTop, startBottom, startLeft, startRight);
+            string animationDirectory = directory + @"Animation\";
+            int frameCount = fps * videoDuration;
 
-        //    mci.CalculationDoneDateTime = mci.StartDateTime;
-        //    mci.EndDateTime = DateTime.Now;
-        //    foreach (MandelbrotCalculationInformation ci in mcis)
-        //    {
-        //        mci.CalculationDoneDateTime = mci.CalculationDoneDateTime.AddSeconds(ci.CalculationTime);
-        //    }
+            if (cleanAnimationDirectory &&
+                Directory.Exists(animationDirectory))
+                Directory.Delete(animationDirectory, true);
 
-        //    return (mci, mcis);
-        //}
+            MandelbrotCalculationInformation mci = new(resolutionX, resolutionY, nameof(RenderAnimation));
+            List<MandelbrotCalculationInformation> mcis = new();
+            mci.StartDateTime = DateTime.Now;
+
+            double startZoom = 1 / ((startTop - startBottom) / 3);
+            double zoomStep = Math.Pow(endZoom / startZoom, 1.0 / (frameCount - 1));
+
+            for (int i = 0; i < frameCount; i++)
+            {
+                string filename = $"MB_{resolutionX}x{resolutionY}_{i}.png";
+
+                double currentZoom = startZoom * Math.Pow(zoomStep, i);
+                double currentTop = endY + 1.5 / currentZoom;
+                double currentBottom = endY - 1.5 / currentZoom;
+                double currentLeft = endX - 1.5 / currentZoom;
+                double currentRight = endX + 1.5 / currentZoom;
+
+                switch (method)
+                {
+                    case CalculationMethod.CPU:
+                        mcis.Add(SaveCPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, animationDirectory, filename));
+                        break;
+                    case CalculationMethod.GPUDouble:
+                        mcis.Add(SaveDoubleGPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, animationDirectory, filename));
+                        break;
+                    case CalculationMethod.GPUFloat:
+                        mcis.Add(SaveFloatGPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, animationDirectory, filename));
+                        break;
+                }
+
+            }
+            // TODO: Some way to better filter the file names instead of just %d?
+            // ffmpeg -r 60 -i MB_3840x2160_%d.png -pix_fmt yuv420p Animation.mp4
+            Process.Start("ffmpeg.exe", $"-r {fps} -i {animationDirectory}MB_{resolutionX}x{resolutionY}_%d.png -pix_fmt yuv420p {directory}Animation_{resolutionX}x{resolutionY}_{videoDuration}s_{fps}fps_{endX.Round(3)}x{endY.Round(3)}.mp4").WaitForExit();
+            if (cleanAnimationDirectory)
+                Directory.Delete(animationDirectory, true);
+
+            mci.CalculationDoneDateTime = DateTime.Now;
+            mci.EndDateTime = mci.CalculationDoneDateTime;
+
+            return (mci, mcis);
+        }
 
         private static int[] CalculateCPUMandelbrot(int resolutionX, int resolutionY, int iterations, double top, double bottom, double left, double right)
         {
@@ -412,6 +489,52 @@ namespace Mandelbaker.Models
 
             float num4 = num / num2;
             return num2 * MathF.Sqrt(1.0f + num4 * num4);
+        }
+
+        public static void HSVtoRGB(double h, double s, double v, out int r, out int g, out int b)
+        {
+            double c = v * s;
+            double x = c * (1 - Math.Abs((h / 60) % 2 - 1));
+            double m = v - c;
+
+            double r1 = 0;
+            double g1 = 0;
+            double b1 = 0;
+
+            if (h >= 0 && h < 60)
+            {
+                r1 = c;
+                g1 = x;
+            }
+            else if (h >= 60 && h < 120)
+            {
+                r1 = x;
+                g1 = c;
+            }
+            else if (h >= 120 && h < 180)
+            {
+                g1 = c;
+                b1 = x;
+            }
+            else if (h >= 180 && h < 240)
+            {
+                g1 = x;
+                b1 = c;
+            }
+            else if (h >= 240 && h < 300)
+            {
+                r1 = x;
+                b1 = c;
+            }
+            else if (h >= 300 && h < 360)
+            {
+                r1 = c;
+                b1 = x;
+            }
+
+            r = Convert.ToInt32((r1 + m) * 255);
+            g = Convert.ToInt32((g1 + m) * 255);
+            b = Convert.ToInt32((b1 + m) * 255);
         }
 
         #region obsolete
