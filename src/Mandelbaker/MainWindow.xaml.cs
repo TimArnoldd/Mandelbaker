@@ -35,7 +35,7 @@ namespace Mandelbaker
             }
             catch
             {
-                System.Windows.MessageBox.Show("Due to limitations in .NET 7.0 the following criteria must be met:\n- A maximum pixel dimension of 65535\n- A maximum amount of pixels of 715'776'516 (equal to 26'754 squared or 35'664x20'061 in for 16:9 images)", "Image too large", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.MessageBox.Show("Due to limitations in .NET 6.0 the following criteria must be met:\n- A maximum pixel dimension of 65535\n- A maximum amount of pixels of 715'776'516 (equal to 26'754 squared or 35'664x20'061 in for 16:9 images)", "Image too large", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             MandelbrotCalculationInformation mci;
@@ -88,7 +88,7 @@ namespace Mandelbaker
             MandelbrotCalculationInformation mci;
             List<MandelbrotCalculationInformation> mcis;
 
-            (mci, mcis) = Mandelbrot.RenderAnimation(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Fps, _viewModel.VideoDuration, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.EndX, _viewModel.EndY, _viewModel.EndZoom, _viewModel.Directory, _viewModel.Method);
+            (mci, mcis) = Mandelbrot.RenderAnimation(_viewModel.ResolutionX, _viewModel.ResolutionY, _viewModel.Iterations, _viewModel.Fps, _viewModel.VideoDuration, _viewModel.Top, _viewModel.Bottom, _viewModel.Left, _viewModel.Right, _viewModel.EndX, _viewModel.EndY, _viewModel.EndZoom, _viewModel.Directory, _viewModel.Method, _viewModel.CleanAnimationDirectory);
             _viewModel.Output = "Render complete: " + mci.ToString();
 
             string jsonString = JsonSerializer.Serialize(mcis, new JsonSerializerOptions() { WriteIndented = true });

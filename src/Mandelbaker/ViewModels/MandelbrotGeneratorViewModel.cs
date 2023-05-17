@@ -129,6 +129,7 @@ namespace Mandelbaker.ViewModels
         public double EndX { get; set; } = 0.36024044343761435;
         public double EndY { get; set; } = -0.6413130610648031;
         public double EndZoom { get; set; } = 3000000000000000;
+        public bool CleanAnimationDirectory { get; set; } = true;
 
         #endregion
 

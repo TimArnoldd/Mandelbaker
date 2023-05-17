@@ -4,6 +4,7 @@ using Mandelbaker.Enums;
 using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -239,12 +240,17 @@ namespace Mandelbaker.Models
             double endY,
             double endZoom,
             string directory,
-            CalculationMethod method)
+            CalculationMethod method,
+            bool cleanAnimationDirectory)
         {   // ffmpeg -r 60 -i MB_3840x2160_%d.png -pix_fmt yuv420p Animation.mp4
-
+            
             (startTop, startBottom, startLeft, startRight) = AdaptToAspectRatio(resolutionX, resolutionY, startTop, startBottom, startLeft, startRight);
-            directory += @"Animation\";
+            string animationDirectory = directory + @"Animation\";
             int frameCount = fps * videoDuration;
+
+            if (cleanAnimationDirectory &&
+                Directory.Exists(animationDirectory))
+                Directory.Delete(animationDirectory, true);
 
             MandelbrotCalculationInformation mci = new(resolutionX, resolutionY, nameof(RenderAnimation));
             List<MandelbrotCalculationInformation> mcis = new();
@@ -266,17 +272,21 @@ namespace Mandelbaker.Models
                 switch (method)
                 {
                     case CalculationMethod.CPU:
-                        mcis.Add(SaveCPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, directory, filename));
+                        mcis.Add(SaveCPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, animationDirectory, filename));
                         break;
                     case CalculationMethod.GPUDouble:
-                        mcis.Add(SaveDoubleGPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, directory, filename));
+                        mcis.Add(SaveDoubleGPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, animationDirectory, filename));
                         break;
                     case CalculationMethod.GPUFloat:
-                        mcis.Add(SaveFloatGPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, directory, filename));
+                        mcis.Add(SaveFloatGPUMandelbrot(resolutionX, resolutionY, iterations, currentTop, currentBottom, currentLeft, currentRight, animationDirectory, filename));
                         break;
                 }
 
             }
+            // TODO: Some way to better filter the file names instead of just %d?
+            Process.Start("ffmpeg.exe", $"-r {fps} -i {animationDirectory}MB_{resolutionX}x{resolutionY}_%d.png -pix_fmt yuv420p {directory}Animation_{resolutionX}x{resolutionY}_{videoDuration}s_{fps}fps_{endX.Round(3)}x{endY.Round(3)}.mp4").WaitForExit();
+            if (cleanAnimationDirectory)
+                Directory.Delete(animationDirectory, true);
 
             mci.CalculationDoneDateTime = DateTime.Now;
             mci.EndDateTime = mci.CalculationDoneDateTime;

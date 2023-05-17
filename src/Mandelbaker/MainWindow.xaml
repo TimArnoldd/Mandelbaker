@@ -63,6 +63,8 @@
             <TextBox Text="{Binding EndY}"></TextBox>
             <Label>End Zoom:</Label>
             <TextBox Text="{Binding EndZoom}"></TextBox>
+            <Label>Clean animation directory:</Label>
+            <CheckBox IsChecked="{Binding CleanAnimationDirectory}"></CheckBox>
             <Button Click="RenderAnimation">Render Animation</Button>
         </StackPanel>
         <Label VerticalAlignment="Bottom" Grid.ColumnSpan="4" Content="{Binding Output, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Margin="30 0 0 10"></Label>
