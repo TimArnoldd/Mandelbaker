@@ -54,19 +54,20 @@ namespace Mandelbaker.Models
                     int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
                     int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
 
-                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
-                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
-                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+                    int r, g, b;
+                    if (pixelIterations == iterations)
+                        HSVtoRGB(0, 0, 0, out r, out g, out b);
+                    else
+                        HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
 
-                    //int r, g, b;
-                    //if (pixelIterations == iterations)
-                    //    HSVtoRGB(0, 0, 0, out r, out g, out b);
-                    //else
-                    //    HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
+                    rgbValues[index] = (byte)b;     // B
+                    rgbValues[index + 1] = (byte)g; // G
+                    rgbValues[index + 2] = (byte)r; // R
 
-                    //rgbValues[index] = (byte)(b);       // B
-                    //rgbValues[index + 1] = (byte)(g);    // G
-                    //rgbValues[index + 2] = (byte)(r);    // R
+                    // Old color scheme
+                    //rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    //rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    //rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
                 });
             });
             Marshal.Copy(rgbValues, 0, ptr, bytes);
@@ -105,19 +106,20 @@ namespace Mandelbaker.Models
                     int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
                     int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
 
-                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
-                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
-                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+                    int r, g, b;
+                    if (pixelIterations == iterations)
+                        HSVtoRGB(0, 0, 0, out r, out g, out b);
+                    else
+                        HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
 
-                    //int r, g, b;
-                    //if (pixelIterations == iterations)
-                    //    HSVtoRGB(0, 0, 0, out r, out g, out b);
-                    //else
-                    //    HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
+                    rgbValues[index] = (byte)b;     // B
+                    rgbValues[index + 1] = (byte)g; // G
+                    rgbValues[index + 2] = (byte)r; // R
 
-                    //rgbValues[index] = (byte)(b);       // B
-                    //rgbValues[index + 1] = (byte)(g);    // G
-                    //rgbValues[index + 2] = (byte)(r);    // R
+                    // Old color scheme
+                    //rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    //rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    //rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
                 });
             });
             Marshal.Copy(rgbValues, 0, ptr, bytes);
@@ -156,19 +158,20 @@ namespace Mandelbaker.Models
                     int pixelIterations = mandelbrot[iHeight * resolutionX + iWidth];
                     int index = (iHeight * resolutionY + iWidth) * 3 + strideBytes * iHeight;
 
-                    rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
-                    rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
-                    rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
+                    int r, g, b;
+                    if (pixelIterations == iterations)
+                        HSVtoRGB(0, 0, 0, out r, out g, out b);
+                    else
+                        HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
 
-                    //int r, g, b;
-                    //if (pixelIterations == iterations)
-                    //    HSVtoRGB(0, 0, 0, out r, out g, out b);
-                    //else
-                    //    HSVtoRGB(pixelIterations % 256 / 255.0 * 359, 1, 1, out r, out g, out b);
+                    rgbValues[index] = (byte)b;     // B
+                    rgbValues[index + 1] = (byte)g; // G
+                    rgbValues[index + 2] = (byte)r; // R
 
-                    //rgbValues[index] = (byte)(b);       // B
-                    //rgbValues[index + 1] = (byte)(g);    // G
-                    //rgbValues[index + 2] = (byte)(r);    // R
+                    // Old color scheme
+                    //rgbValues[index] = (byte)(pixelIterations % 16 * 16);       // B
+                    //rgbValues[index + 1] = (byte)(pixelIterations % 8 * 32);    // G
+                    //rgbValues[index + 2] = (byte)(pixelIterations % 3 * 64);    // R
                 });
             });
             Marshal.Copy(rgbValues, 0, ptr, bytes);
@@ -242,7 +245,7 @@ namespace Mandelbaker.Models
             string directory,
             CalculationMethod method,
             bool cleanAnimationDirectory)
-        {   // ffmpeg -r 60 -i MB_3840x2160_%d.png -pix_fmt yuv420p Animation.mp4
+        {
             
             (startTop, startBottom, startLeft, startRight) = AdaptToAspectRatio(resolutionX, resolutionY, startTop, startBottom, startLeft, startRight);
             string animationDirectory = directory + @"Animation\";
@@ -284,6 +287,7 @@ namespace Mandelbaker.Models
 
             }
             // TODO: Some way to better filter the file names instead of just %d?
+            // ffmpeg -r 60 -i MB_3840x2160_%d.png -pix_fmt yuv420p Animation.mp4
             Process.Start("ffmpeg.exe", $"-r {fps} -i {animationDirectory}MB_{resolutionX}x{resolutionY}_%d.png -pix_fmt yuv420p {directory}Animation_{resolutionX}x{resolutionY}_{videoDuration}s_{fps}fps_{endX.Round(3)}x{endY.Round(3)}.mp4").WaitForExit();
             if (cleanAnimationDirectory)
                 Directory.Delete(animationDirectory, true);
