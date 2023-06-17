@@ -1,4 +1,5 @@
 ﻿using Mandelbaker.Enums;
+using Mandelbaker.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -82,7 +83,7 @@ namespace Mandelbaker.ViewModels
         #region Matrix Properties
 
         private int _dimensionSize = 5;
-        public int DimensionSize
+        public int MatrixDimensionSize
         {
             get => _dimensionSize;
             set
@@ -99,7 +100,7 @@ namespace Mandelbaker.ViewModels
         #region Animation Properties
 
         private int _fps = 30;
-        public int Fps
+        public int AnimationFps
         {
             get => _fps;
             set
@@ -113,7 +114,7 @@ namespace Mandelbaker.ViewModels
             }
         }
         private int _videoDuration = 10;
-        public int VideoDuration
+        public int AnimationDuration
         {
             get => _videoDuration;
             set
@@ -126,20 +127,45 @@ namespace Mandelbaker.ViewModels
                     _videoDuration = value;
             }
         }
-        public double EndX { get; set; } = 0.36024044343761435;
-        public double EndY { get; set; } = -0.6413130610648031;
-        public double EndZoom { get; set; } = 3000000000000000;
-        public bool CleanAnimationDirectory { get; set; } = true;
+        public double AnimationEndX { get; set; } = 0.36024044343761435;
+        public double AnimationEndY { get; set; } = -0.6413130610648031;
+        public double AnimationEndZoom { get; set; } = 3000000000000000;
+        public bool AnimationCleanDirectory { get; set; } = true;
 
         #endregion
 
 
         public MandelbrotGeneratorViewModel()
         {
-            foreach (var method in Enum.GetValues(typeof(CalculationMethod)))
+            foreach (CalculationMethod method in Enum.GetValues(typeof(CalculationMethod)))
             {
                 Methods.Add(method.ToString());
             }
+        }
+
+
+        public MandelbrotParameters ToMandelbrotParameters()
+        {
+            return new()
+            {
+                ResolutionX = ResolutionX,
+                ResolutionY = ResolutionY,
+                Iterations = Iterations,
+                Top = Top,
+                Bottom = Bottom,
+                Left = Left,
+                Right = Right,
+                Directory = Directory,
+                Filename = Filename,
+                Method = Method,
+                MatrixDimensionSize = MatrixDimensionSize,
+                AnimationFps = AnimationFps,
+                AnimationDuration = AnimationDuration,
+                AnimationEndX = AnimationEndX,
+                AnimationEndY = AnimationEndY,
+                AnimationEndZoom = AnimationEndZoom,
+                AnimationCleanDirectory = AnimationCleanDirectory,
+            };
         }
 
 

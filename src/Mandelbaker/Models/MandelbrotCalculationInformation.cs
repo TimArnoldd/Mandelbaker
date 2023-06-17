@@ -17,10 +17,6 @@ namespace Mandelbaker.Models
         public string Method { get; set; } = string.Empty;
 
 
-        public MandelbrotCalculationInformation()
-        {
-
-        }
         public MandelbrotCalculationInformation(int resolutionX, int resolutionY, string method)
         {
             ResolutionX = resolutionX;
