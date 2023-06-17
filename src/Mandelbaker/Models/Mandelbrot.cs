@@ -1,10 +1,10 @@
-﻿using ILGPU;
+﻿using FFMpegCore;
+using ILGPU;
 using ILGPU.Runtime;
 using Mandelbaker.Enums;
 using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -246,7 +246,6 @@ namespace Mandelbaker.Models
             CalculationMethod method,
             bool cleanAnimationDirectory)
         {
-            
             (startTop, startBottom, startLeft, startRight) = AdaptToAspectRatio(resolutionX, resolutionY, startTop, startBottom, startLeft, startRight);
             string animationDirectory = directory + @"Animation\";
             int frameCount = fps * videoDuration;
@@ -261,10 +260,12 @@ namespace Mandelbaker.Models
 
             double startZoom = 1 / ((startTop - startBottom) / 3);
             double zoomStep = Math.Pow(endZoom / startZoom, 1.0 / (frameCount - 1));
+            List<string> filenames = new();
 
             for (int i = 0; i < frameCount; i++)
             {
                 string filename = $"MB_{resolutionX}x{resolutionY}_{i}.png";
+                filenames.Add(animationDirectory + filename);
 
                 double currentZoom = startZoom * Math.Pow(zoomStep, i);
                 double currentTop = endY + 1.5 / currentZoom;
@@ -286,9 +287,14 @@ namespace Mandelbaker.Models
                 }
 
             }
-            // TODO: Some way to better filter the file names instead of just %d?
+
             // ffmpeg -r 60 -i MB_3840x2160_%d.png -pix_fmt yuv420p Animation.mp4
-            Process.Start("ffmpeg.exe", $"-r {fps} -i {animationDirectory}MB_{resolutionX}x{resolutionY}_%d.png -pix_fmt yuv420p {directory}Animation_{resolutionX}x{resolutionY}_{videoDuration}s_{fps}fps_{endX.Round(3)}x{endY.Round(3)}.mp4").WaitForExit();
+            _ = FFMpegArguments
+                .FromConcatInput(filenames, options => options.WithFramerate(fps))
+                .OutputToFile($"{directory}Animation_{resolutionX}x{resolutionY}_{videoDuration}s_{fps}fps_{endX.Round(3)}x{endY.Round(3)}.mp4", true, options => options
+                    .ForcePixelFormat("yuv420p"))
+                .ProcessSynchronously();
+
             if (cleanAnimationDirectory)
                 Directory.Delete(animationDirectory, true);
 
