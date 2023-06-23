@@ -1,7 +1,7 @@
 ﻿using MathNet.Numerics;
 using System;
 
-namespace Mandelbaker.Models
+namespace Mandelbaker.BL
 {
     public class Helpers
     {
@@ -35,7 +35,7 @@ namespace Mandelbaker.Models
         public static void HSVtoRGB(double h, double s, double v, out int r, out int g, out int b)
         {
             double c = v * s;
-            double x = c * (1 - Math.Abs((h / 60) % 2 - 1));
+            double x = c * (1 - Math.Abs(h / 60 % 2 - 1));
             double m = v - c;
 
             double r1 = 0;

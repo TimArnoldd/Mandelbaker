@@ -2,6 +2,7 @@
 using ILGPU;
 using ILGPU.Runtime;
 using Mandelbaker.Enums;
+using Mandelbaker.Models;
 using MathNet.Numerics;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Mandelbaker.Models
+namespace Mandelbaker.BL
 {
     public class Mandelbrot
     {
